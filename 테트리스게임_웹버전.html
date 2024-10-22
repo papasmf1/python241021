@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>테트리스 게임</title>
+    <style>
+        body {
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .game-container {
+            text-align: center;
+        }
+
+        canvas {
+            border: 2px solid #333;
+        }
+
+        .score {
+            margin-top: 20px;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="tetris" width="240" height="400"></canvas>
+        <div class="score">점수: <span id="score">0</span></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('tetris');
+        const context = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+
+        context.scale(20, 20);
+
+        // 테트로미노 모양 정의
+        const tetrominos = [
+            [[1,1,1,1]],
+            [[1,1],[1,1]],
+            [[1,1,1],[0,1,0]],
+            [[1,1,1],[1,0,0]],
+            [[1,1,1],[0,0,1]],
+            [[1,1,0],[0,1,1]],
+            [[0,1,1],[1,1,0]]
+        ];
+
+        // 게임 상태
+        const gameState = {
+            score: 0,
+            level: 1,
+            playfield: createPlayfield(),
+            piece: null
+        };
+
+        function createPlayfield() {
+            return Array(20).fill().map(() => Array(12).fill(0));
+        }
+
+        function createPiece() {
+            const piece = tetrominos[Math.floor(Math.random() * tetrominos.length)];
+            return {
+                shape: piece,
+                x: 5,
+                y: 0
+            };
+        }
+
+        function drawPlayfield() {
+            gameState.playfield.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value) {
+                        context.fillStyle = 'red';
+                        context.fillRect(x, y, 1, 1);
+                    }
+                });
+            });
+        }
+
+        function drawPiece() {
+            gameState.piece.shape.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value) {
+                        context.fillStyle = 'blue';
+                        context.fillRect(x + gameState.piece.x, y + gameState.piece.y, 1, 1);
+                    }
+                });
+            });
+        }
+
+        function merge() {
+            gameState.piece.shape.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value) {
+                        gameState.playfield[y + gameState.piece.y][x + gameState.piece.x] = value;
+                    }
+                });
+            });
+        }
+
+        function collision() {
+            return gameState.piece.shape.some((row, y) => {
+                return row.some((value, x) => {
+                    return (
+                        value &&
+                        (gameState.playfield[y + gameState.piece.y] &&
+                        gameState.playfield[y + gameState.piece.y][x + gameState.piece.x]) !== 0
+                    );
+                });
+            });
+        }
+
+        function moveDown() {
+            gameState.piece.y++;
+            if (collision()) {
+                gameState.piece.y--;
+                merge();
+                gameState.piece = createPiece();
+                if (collision()) {
+                    // 게임 오버
+                    gameState.playfield = createPlayfield();
+                    gameState.score = 0;
+                }
+            }
+        }
+
+        function moveLeft() {
+            gameState.piece.x--;
+            if (collision()) {
+                gameState.piece.x++;
+            }
+        }
+
+        function moveRight() {
+            gameState.piece.x++;
+            if (collision()) {
+                gameState.piece.x--;
+            }
+        }
+
+        function rotate() {
+            const rotated = gameState.piece.shape[0].map((_, i) =>
+                gameState.piece.shape.map(row => row[i]).reverse()
+            );
+            const previousShape = gameState.piece.shape;
+            gameState.piece.shape = rotated;
+            if (collision()) {
+                gameState.piece.shape = previousShape;
+            }
+        }
+
+        function clearLines() {
+            let linesCleared = 0;
+            outer: for (let y = gameState.playfield.length - 1; y >= 0; y--) {
+                for (let x = 0; x < gameState.playfield[y].length; x++) {
+                    if (gameState.playfield[y][x] === 0) {
+                        continue outer;
+                    }
+                }
+                gameState.playfield.splice(y, 1);
+                gameState.playfield.unshift(Array(12).fill(0));
+                linesCleared++;
+            }
+            gameState.score += linesCleared * 100;
+            scoreElement.textContent = gameState.score;
+        }
+
+        function update() {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            drawPlayfield();
+            drawPiece();
+        }
+
+        document.addEventListener('keydown', event => {
+            switch (event.keyCode) {
+                case 37: moveLeft(); break;
+                case 39: moveRight(); break;
+                case 40: moveDown(); break;
+                case 38: rotate(); break;
+            }
+            update();
+        });
+
+        gameState.piece = createPiece();
+
+        function gameLoop() {
+            moveDown();
+            clearLines();
+            update();
+            setTimeout(gameLoop, 1000 / gameState.level);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
