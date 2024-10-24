@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 #웹서버에 요청 
 import requests
 
+
 url = "https://www.daangn.com/fleamarket/"
 response = requests.get(url)
 #검색이 용이한 객체 생성
