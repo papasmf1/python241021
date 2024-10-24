@@ -10,7 +10,7 @@ class DemoForm(QMainWindow):
 
     def setupUI(self):
         btn1 = QPushButton("닫기", self)
-        btn1.move(20, 20)
+        btn1.move(100, 20)
         btn1.clicked.connect(QCoreApplication.instance().quit)
 
 #진입점체크 
